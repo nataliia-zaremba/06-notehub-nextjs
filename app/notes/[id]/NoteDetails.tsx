@@ -12,18 +12,17 @@ interface NoteDetailsProps {
   };
 }
 
-const NoteDetails: React.FC<NoteDetailsProps> = async ({ params }) => {
+const NoteDetails = async ({ params }: NoteDetailsProps) => {
   const id = Number(params.id);
   const queryClient = new QueryClient();
 
-  // Prefetch data on server
   try {
     await queryClient.prefetchQuery({
       queryKey: ["note", id],
       queryFn: () => fetchNoteById(id),
     });
   } catch (error) {
-    // Error will be handled by error.tsx
+    // handle error if needed
   }
 
   return (

@@ -6,6 +6,8 @@ interface NoteDetailsPageProps {
   };
 }
 
-export default function NoteDetailsPage({ params }: NoteDetailsPageProps) {
+export default async function NoteDetailsPage({
+  params,
+}: NoteDetailsPageProps) {
   return <NoteDetails params={params} />;
 }
