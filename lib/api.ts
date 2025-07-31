@@ -3,14 +3,13 @@ import type { Note, CreateNoteRequest } from "../types/note";
 import toast from "react-hot-toast";
 
 axios.defaults.baseURL = "https://notehub-public.goit.study/api";
-const myKey = process.env.NEXT_PUBLIC_NOTEHUB_TOKEN;
-const myApiKey = `Bearer ${myKey}`;
-axios.defaults.headers.common["Authorization"] = myApiKey;
 
+const myKey = process.env.NEXT_PUBLIC_NOTEHUB_TOKEN;
 if (!myKey) {
   toast.error("NEXT_PUBLIC_NOTEHUB_TOKEN is not defined");
   throw new Error("NEXT_PUBLIC_NOTEHUB_TOKEN is required");
 }
+axios.defaults.headers.common["Authorization"] = `Bearer ${myKey}`;
 
 export interface FetchNotesParams {
   page?: number;
@@ -30,14 +29,6 @@ interface RawFetchNotesResponse {
   totalPages: number;
 }
 
-interface CreateNoteResponse {
-  note: Note;
-}
-
-interface DeleteNoteResponse {
-  note: Note;
-}
-
 export const fetchNotes = async ({
   page = 1,
   perPage = 12,
@@ -48,7 +39,7 @@ export const fetchNotes = async ({
       params: {
         page,
         perPage,
-        ...(search !== "" && { search: search }),
+        ...(search && { search }),
       },
     });
 
@@ -68,20 +59,20 @@ export const fetchNotes = async ({
 
 export const createNote = async (note: CreateNoteRequest): Promise<Note> => {
   try {
-    const response = await axios.post<CreateNoteResponse>("/notes", note);
+    const response = await axios.post<Note>("/notes", note);
     toast.success("Note created successfully");
-    return response.data.note;
+    return response.data;
   } catch (error) {
     toast.error("Failed to create note");
     throw error;
   }
 };
 
-export const deleteNote = async (id: number): Promise<Note> => {
+export const deleteNote = async (id: string): Promise<Note> => {
   try {
-    const response = await axios.delete<DeleteNoteResponse>(`/notes/${id}`);
+    const response = await axios.delete<Note>(`/notes/${id}`);
     toast.success("Note deleted successfully");
-    return response.data.note;
+    return response.data;
   } catch (error) {
     toast.error("Failed to delete note");
     throw error;
@@ -91,7 +82,7 @@ export const deleteNote = async (id: number): Promise<Note> => {
 export const fetchNoteById = async (id: number): Promise<Note> => {
   try {
     const response = await axios.get<{ note: Note }>(`/notes/${id}`);
-    return response.data.note;
+    return response.data.note; // цей випадок не змінюється, якщо API повертає { note: {...} }
   } catch (error) {
     toast.error("Failed to fetch note details");
     throw error;
