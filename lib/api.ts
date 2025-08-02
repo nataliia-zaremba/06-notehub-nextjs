@@ -79,10 +79,13 @@ export const deleteNote = async (id: string): Promise<Note> => {
   }
 };
 
-export const fetchNoteById = async (id: number): Promise<Note> => {
+// Виправлена функція fetchNoteById
+export const fetchNoteById = async (id: string): Promise<Note> => {
   try {
-    const response = await axios.get<{ note: Note }>(`/notes/${id}`);
-    return response.data.note; // цей випадок не змінюється, якщо API повертає { note: {...} }
+    // Виправлення 1: змінено тип параметра з number на string
+    // Виправлення 2: API повертає об'єкт нотатки безпосередньо, без обгортання в "note"
+    const response = await axios.get<Note>(`/notes/${id}`);
+    return response.data; // замість response.data.note
   } catch (error) {
     toast.error("Failed to fetch note details");
     throw error;
