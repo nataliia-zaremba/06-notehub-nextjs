@@ -10,10 +10,10 @@ import NoteDetails from "./NoteDetails";
 import { fetchNoteById } from "@/lib/api";
 import type { Note } from "@/types/note";
 
-// Інтерфейс для параметрів сторінки
-interface PageProps {
-  params: Promise<{ id: string }>;
-}
+// Типи для Next.js App Router
+type Props = {
+  params: { id: string };
+};
 
 // Ключ запиту для React Query (має бути узгоджений з клієнтським компонентом)
 export const getNoteQueryKey = (id: string) => ["note", id];
@@ -88,7 +88,11 @@ async function NoteDetailsContent({ params }: { params: { id: string } }) {
 }
 
 // Головний компонент сторінки
-export default async function NoteDetailsPage({ params }: PageProps) {
+export default async function NoteDetailsPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   // Очікуємо розв'язання Promise з параметрами
   const resolvedParams = await params;
 
@@ -114,12 +118,9 @@ export default async function NoteDetailsPage({ params }: PageProps) {
 }
 
 // Генерація метаданих для сторінки
-export async function generateMetadata({
-  params,
-}: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
-    const resolvedParams = await params;
-    const { id } = resolvedParams;
+    const { id } = params;
 
     // Завантажуємо дані для метаданих
     const note = await fetchNoteById(id);
