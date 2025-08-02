@@ -5,12 +5,13 @@ import {
   dehydrate,
 } from "@tanstack/react-query";
 import { notFound } from "next/navigation";
+import { Metadata } from "next";
 import NoteDetails from "./NoteDetails";
 import { fetchNoteById } from "@/lib/api";
 import type { Note } from "@/types/note";
 
 // Інтерфейс для параметрів сторінки
-interface NoteDetailsPageProps {
+interface PageProps {
   params: Promise<{ id: string }>;
 }
 
@@ -87,9 +88,7 @@ async function NoteDetailsContent({ params }: { params: { id: string } }) {
 }
 
 // Головний компонент сторінки
-export default async function NoteDetailsPage({
-  params,
-}: NoteDetailsPageProps) {
+export default async function NoteDetailsPage({ params }: PageProps) {
   // Очікуємо розв'язання Promise з параметрами
   const resolvedParams = await params;
 
@@ -115,9 +114,10 @@ export default async function NoteDetailsPage({
 }
 
 // Генерація метаданих для сторінки
-export async function generateMetadata(props: NoteDetailsPageProps) {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   try {
-    const { params } = props;
     const resolvedParams = await params;
     const { id } = resolvedParams;
 
@@ -147,21 +147,4 @@ export async function generateMetadata(props: NoteDetailsPageProps) {
   }
 }
 
-// Опціонально: генерація статичних параметрів для статичного рендерингу
-// export async function generateStaticParams() {
-//   // Якщо у вас є API для отримання всіх ID нотаток
-//   try {
-//     const response = await fetch(`${process.env.API_BASE_URL}/notes`);
-//     const notes = await response.json();
-//
-//     return notes.data.map((note: Note) => ({
-//       id: note.id,
-//     }));
-//   } catch (error) {
-//     console.error("Failed to generate static params:", error);
-//     return [];
-//   }
-// }
-
-// Налаштування для ISR
 export const revalidate = 300; // 5 хвилин
