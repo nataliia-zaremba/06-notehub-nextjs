@@ -6,7 +6,7 @@ import css from "./NoteDetails.module.css";
 const NoteDetailsClient = () => {
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
-  const parsedId = Number(id);
+
   const {
     data: note,
     isLoading,
