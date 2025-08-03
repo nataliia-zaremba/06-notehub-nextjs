@@ -28,33 +28,27 @@ async function NoteDetailsContent({ params }: { params: { id: string } }) {
   }
 
   try {
-    // Створюємо новий QueryClient для серверного рендерингу
     const queryClient = new QueryClient({
       defaultOptions: {
         queries: {
-          // Налаштування для серверного рендерингу
           staleTime: 60 * 1000, // 1 хвилина
-          gcTime: 5 * 60 * 1000, // 5 хвилин (раніше cacheTime)
+          gcTime: 5 * 60 * 1000, // 5 хвилин
         },
       },
     });
 
-    // Префетчим дані нотатки
     await queryClient.prefetchQuery({
       queryKey: getNoteQueryKey(id),
       queryFn: () => fetchNoteById(id),
       staleTime: 60 * 1000,
     });
 
-    // Отримуємо дані для валідації
     const noteData = queryClient.getQueryData<Note>(getNoteQueryKey(id));
 
-    // Перевіряємо, чи існує нотатка
     if (!noteData) {
       notFound();
     }
 
-    // Валідуємо структуру даних
     if (
       !noteData.id ||
       typeof noteData.title !== "string" ||
@@ -64,7 +58,6 @@ async function NoteDetailsContent({ params }: { params: { id: string } }) {
       throw new Error("Invalid note data structure");
     }
 
-    // Дегідратуємо стан для передачі клієнту
     const dehydratedState = dehydrate(queryClient);
 
     return (
@@ -75,12 +68,10 @@ async function NoteDetailsContent({ params }: { params: { id: string } }) {
   } catch (error) {
     console.error(`Failed to load note with ID ${id}:`, error);
 
-    // Якщо помилка 404, показуємо not found
     if (error instanceof Error && error.message.includes("404")) {
       notFound();
     }
 
-    // Для інших помилок показуємо error boundary
     throw new Error(
       `Failed to load note: ${error instanceof Error ? error.message : "Unknown error"}`
     );
@@ -91,11 +82,8 @@ async function NoteDetailsContent({ params }: { params: { id: string } }) {
 export default async function NoteDetailsPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
-  // Очікуємо розв'язання Promise з параметрами
-  const resolvedParams = await params;
-
   return (
     <div className="container mx-auto px-4 py-8">
       <Suspense
@@ -111,7 +99,7 @@ export default async function NoteDetailsPage({
           </div>
         }
       >
-        <NoteDetailsContent params={resolvedParams} />
+        <NoteDetailsContent params={params} />
       </Suspense>
     </div>
   );
@@ -122,7 +110,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const { id } = params;
 
-    // Завантажуємо дані для метаданих
     const note = await fetchNoteById(id);
 
     return {
