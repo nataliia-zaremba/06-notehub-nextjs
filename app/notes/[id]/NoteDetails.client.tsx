@@ -1,38 +1,41 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { fetchNoteById } from "../../../lib/api";
-import type { Note } from "../../../types/note";
-import css from "./NoteDetails.module.css";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { fetchNoteById, deleteNote } from "@/lib/api";
+import type { Note } from "@/types/note";
+import { getNoteQueryKey } from "./page";
+import toast from "react-hot-toast";
 
-// Інтерфейс для пропсів компонента
 interface NoteDetailsClientProps {
-  initialData?: Note;
-  noteId?: string;
+  noteId: string;
+  initialData: Note;
 }
 
-const NoteDetailsClient: React.FC<NoteDetailsClientProps> = ({
-  initialData,
+export default function NoteDetailsClient({
   noteId,
-}) => {
-  const params = useParams();
+  initialData,
+}: NoteDetailsClientProps) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
 
-  const id = noteId || (typeof params.id === "string" ? params.id : "");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(initialData?.title || "");
+  const [editContent, setEditContent] = useState(initialData?.content || "");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const {
     data: note,
     isLoading,
     error,
+    refetch,
   } = useQuery({
-    queryKey: ["note", id],
-    queryFn: () => fetchNoteById(id),
-    enabled: Boolean(id),
-    refetchOnMount: false,
-
+    queryKey: getNoteQueryKey(noteId),
+    queryFn: () => fetchNoteById(noteId),
     initialData,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
     retry: (failureCount, error) => {
       if (error instanceof Error && error.message.includes("404")) {
         return false;
@@ -41,52 +44,211 @@ const NoteDetailsClient: React.FC<NoteDetailsClientProps> = ({
     },
   });
 
+  useEffect(() => {
+    if (note) {
+      setEditTitle(note.title);
+      setEditContent(note.content);
+    }
+  }, [note]);
+
+  const handleDelete = async () => {
+    if (!note) return;
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${note.title}"? This action cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    try {
+      setIsDeleting(true);
+      await deleteNote(note.id);
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      queryClient.removeQueries({ queryKey: getNoteQueryKey(noteId) });
+
+      toast.success("Note deleted successfully");
+      router.push("/notes");
+    } catch (error) {
+      console.error("Failed to delete note:", error);
+      toast.error("Failed to delete note");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleEdit = () => {
+    if (!note) return;
+    setEditTitle(note.title);
+    setEditContent(note.content);
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!note) return;
+
+    try {
+      // Тут ви можете використати updateNote API функцію
+      const updatedNote = { ...note, title: editTitle, content: editContent };
+
+      queryClient.setQueryData(getNoteQueryKey(noteId), updatedNote);
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+
+      setIsEditing(false);
+      toast.success("Note updated successfully");
+    } catch (error) {
+      console.error("Failed to update note:", error);
+      toast.error("Failed to update note");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    if (note) {
+      setEditTitle(note.title);
+      setEditContent(note.content);
+    }
+  };
+
   if (isLoading && !note) {
     return (
-      <div className={css.loadingContainer}>
-        <div className={css.spinner}></div>
-        <p>Loading, please wait...</p>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <span className="ml-3 text-gray-600">Loading note details...</span>
       </div>
     );
   }
 
-  if (error || !note) {
+  if (error) {
     return (
-      <div className={css.errorContainer}>
-        <p className={css.errorMessage}>Something went wrong.</p>
-        <p className={css.errorDetails}>
-          {error instanceof Error ? error.message : "Failed to load note"}
-        </p>
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <div className="text-red-600 text-xl font-semibold">
+          Failed to Load Note
+        </div>
+        <div className="text-gray-600 text-center">
+          {error instanceof Error ? error.message : "An unknown error occurred"}
+        </div>
+        <div className="space-x-4">
+          <button
+            onClick={() => refetch()}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          >
+            Try Again
+          </button>
+          <button
+            onClick={() => router.push("/notes")}
+            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+          >
+            Back to Notes
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!note) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <div className="text-gray-600 text-xl font-semibold">
+          Note Not Found
+        </div>
         <button
-          onClick={() => window.location.reload()}
-          className={css.retryButton}
+          onClick={() => router.push("/notes")}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
         >
-          Try Again
+          Back to Notes
         </button>
       </div>
     );
   }
 
   return (
-    <div className={css.container}>
-      <div className={css.item}>
-        <div className={css.header}>
-          <h2>{note.title}</h2>
+    <div className="max-w-4xl mx-auto">
+      <nav className="mb-6 text-sm text-gray-600">
+        <button
+          onClick={() => router.push("/notes")}
+          className="hover:text-blue-600 transition-colors"
+        >
+          ← Back to Notes
+        </button>
+      </nav>
+
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          {isEditing ? (
+            <input
+              type="text"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              className="text-3xl font-bold text-gray-900 mb-2 border-b-2 border-blue-500 bg-transparent focus:outline-none w-full"
+              placeholder="Note title"
+            />
+          ) : (
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              {note.title}
+            </h1>
+          )}
+          <div className="text-sm text-gray-500 space-x-4">
+            <span>
+              Created: {new Date(note.createdAt).toLocaleDateString()}
+            </span>
+            {note.updatedAt && note.updatedAt !== note.createdAt && (
+              <span>
+                Updated: {new Date(note.updatedAt).toLocaleDateString()}
+              </span>
+            )}
+          </div>
         </div>
-        <p className={css.content}>{note.content}</p>
-        <div className={css.metadata}>
-          <p className={css.date}>
-            Created: {new Date(note.createdAt).toLocaleDateString()}
-          </p>
-          {note.updatedAt && note.updatedAt !== note.createdAt && (
-            <p className={css.date}>
-              Updated: {new Date(note.updatedAt).toLocaleDateString()}
-            </p>
+
+        <div className="flex space-x-2">
+          {isEditing ? (
+            <>
+              <button
+                onClick={handleSaveEdit}
+                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+              >
+                Save
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={handleEdit}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              >
+                Edit
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors disabled:opacity-50"
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="prose max-w-none">
+          {isEditing ? (
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="w-full h-64 p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
+              placeholder="Note content"
+            />
+          ) : (
+            <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">
+              {note.content}
+            </div>
           )}
         </div>
       </div>
     </div>
   );
-};
-
-export default NoteDetailsClient;
+}
