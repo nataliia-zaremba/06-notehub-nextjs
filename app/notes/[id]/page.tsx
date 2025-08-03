@@ -2,15 +2,11 @@ import NoteDetails from "./NoteDetails";
 import { fetchNoteById } from "@/lib/api";
 import type { Metadata } from "next";
 
-type GenerateMetadataProps = {
-  params: {
-    id: string;
-  };
-};
-
 export async function generateMetadata({
   params,
-}: GenerateMetadataProps): Promise<Metadata> {
+}: {
+  params: { id: string };
+}): Promise<Metadata> {
   const note = await fetchNoteById(String(params.id));
 
   return {
