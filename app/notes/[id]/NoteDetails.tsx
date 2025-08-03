@@ -1,9 +1,6 @@
-import dynamic from "next/dynamic";
+"use client";
 
-// Динамічний імпорт клієнтського компонента без SSR
-const NoteDetailsClient = dynamic(() => import("./NoteDetails.client"), {
-  ssr: false,
-});
+import NoteDetailsClient from "./NoteDetails.client";
 
 export default function NoteDetails() {
   return <NoteDetailsClient />;
