@@ -1,11 +1,26 @@
 import NotesClient from "./Notes.client";
+import type { FetchNotesResponse } from "../../lib/api";
 
-const Notes: React.FC = () => {
+interface NotesProps {
+  initialNotesData: FetchNotesResponse | null;
+  initialPage: number;
+  initialSearch: string;
+}
+
+const Notes: React.FC<NotesProps> = ({
+  initialNotesData,
+  initialPage,
+  initialSearch,
+}) => {
   return (
     <main>
       <div>
         <h1>Notes</h1>
-        <NotesClient />
+        <NotesClient
+          initialNotesData={initialNotesData}
+          initialPage={initialPage}
+          initialSearch={initialSearch}
+        />
       </div>
     </main>
   );

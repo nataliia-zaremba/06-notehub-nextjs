@@ -8,7 +8,9 @@ import Pagination from "../../components/Pagination/Pagination";
 import NoteModal from "../../components/Modal/Modal";
 import NoteForm from "../../components/NoteForm/NoteForm";
 import { fetchNotes } from "../../lib/api";
+import type { FetchNotesResponse } from "../../lib/api";
 import css from "./NotesPage.module.css";
+
 const useDebounce = (value: string, delay: number) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
 
@@ -25,9 +27,20 @@ const useDebounce = (value: string, delay: number) => {
   return debouncedValue;
 };
 
-const NotesClient: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState("");
+// Типізовані пропси компонента
+interface NotesClientProps {
+  initialNotesData: FetchNotesResponse | null;
+  initialPage: number;
+  initialSearch: string;
+}
+
+const NotesClient: React.FC<NotesClientProps> = ({
+  initialNotesData,
+  initialPage,
+  initialSearch,
+}) => {
+  const [currentPage, setCurrentPage] = useState(initialPage);
+  const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const perPage = 12;
 
@@ -45,6 +58,11 @@ const NotesClient: React.FC = () => {
         perPage,
         search: debouncedSearchTerm,
       }),
+
+    initialData:
+      currentPage === initialPage && debouncedSearchTerm === initialSearch
+        ? initialNotesData
+        : undefined,
     placeholderData: (previousData) => previousData,
   });
 
@@ -95,9 +113,12 @@ const NotesClient: React.FC = () => {
 
       {notes.length > 0 && <NoteList notes={notes} />}
 
-      <NoteModal isOpen={isModalOpen} onClose={handleCloseModal}>
-        <NoteForm onSuccess={handleNoteCreated} onCancel={handleCloseModal} />
-      </NoteModal>
+      {/* Умовний рендеринг модального вікна */}
+      {isModalOpen && (
+        <NoteModal isOpen={isModalOpen} onClose={handleCloseModal}>
+          <NoteForm onSuccess={handleNoteCreated} onCancel={handleCloseModal} />
+        </NoteModal>
+      )}
     </div>
   );
 };
