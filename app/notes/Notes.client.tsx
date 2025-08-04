@@ -29,18 +29,12 @@ const useDebounce = (value: string, delay: number) => {
 
 // Типізовані пропси компонента
 interface NotesClientProps {
-  initialNotesData: FetchNotesResponse | null;
-  initialPage: number;
-  initialSearch: string;
+  initialData: FetchNotesResponse;
 }
 
-const NotesClient: React.FC<NotesClientProps> = ({
-  initialNotesData,
-  initialPage,
-  initialSearch,
-}) => {
-  const [currentPage, setCurrentPage] = useState(initialPage);
-  const [searchTerm, setSearchTerm] = useState(initialSearch);
+const NotesClient: React.FC<NotesClientProps> = ({ initialData }) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const perPage = 12;
 
@@ -58,11 +52,9 @@ const NotesClient: React.FC<NotesClientProps> = ({
         perPage,
         search: debouncedSearchTerm,
       }),
-
+    // Використовуємо початкові дані як initialData
     initialData:
-      currentPage === initialPage && debouncedSearchTerm === initialSearch
-        ? initialNotesData
-        : undefined,
+      currentPage === 1 && debouncedSearchTerm === "" ? initialData : undefined,
     placeholderData: (previousData) => previousData,
   });
 
