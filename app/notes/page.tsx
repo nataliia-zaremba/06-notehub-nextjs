@@ -2,14 +2,29 @@ import { fetchNotes } from "../../lib/api";
 import type { FetchNotesResponse } from "../../lib/api";
 import Notes from "./Notes";
 
+interface SearchParams {
+  page?: string | string[];
+  search?: string | string[];
+}
+
+// Серверний компонент для завантаження початкових даних
 export default async function NotesPage({
   searchParams,
 }: {
-  searchParams: { page?: string; search?: string };
+  searchParams: SearchParams;
 }) {
-  const page = parseInt(searchParams.page || "1", 10);
-  const search = searchParams.search || "";
+  // Обробка searchParams з урахуванням можливості масивів значень
+  const pageParam = Array.isArray(searchParams.page)
+    ? searchParams.page[0]
+    : searchParams.page;
+  const searchParam = Array.isArray(searchParams.search)
+    ? searchParams.search[0]
+    : searchParams.search;
 
+  const page = parseInt(pageParam || "1", 10);
+  const search = searchParam || "";
+
+  // Завантажуємо початкові дані на сервері
   let initialNotesData: FetchNotesResponse | null = null;
 
   try {
@@ -20,6 +35,7 @@ export default async function NotesPage({
     });
   } catch (error) {
     console.error("Failed to fetch initial notes data:", error);
+    // Можна передати null і обробити помилку на клієнті
   }
 
   return (
